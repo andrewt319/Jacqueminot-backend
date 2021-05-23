@@ -2,8 +2,34 @@ const router = require('express').Router();
 let FullUser = require('../models/fullUser.model');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-
+const multer = require('multer');
 const JWT_SECRET = 'lkjsdfku4@#$@#o7w59 pajfclvkas%$#ur3daFDUA'
+
+const storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, './uploads/');
+    },
+    filename: function(req, file, cb) {
+        cb(null, new Date().toISOString() + file.originalname);
+    }
+});
+
+const fileFilter = (req, file, cb) => {
+    // reject a file
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+};
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 1024 * 1024 * 5
+    },
+    fileFilter: fileFilter
+});
 
 //get all users
 router.route('/').get((req, res) => {
@@ -142,7 +168,9 @@ router.route('/:id').delete((req, res) => {
 });
 
 //update current user
-router.route('/update').post(async(req, res) => {
+router.route('/update').post(upload.single('pfp'), async(req, res) => {
+    console.log(req.file.path);
+
     const token = req.body.token;
     const tempUser = jwt.verify(token, JWT_SECRET);
     FullUser.findById(tempUser.id)
@@ -160,6 +188,7 @@ router.route('/update').post(async(req, res) => {
             user.linkedin = req.body.linkedin ? req.body.linkedin : user.linkedin;
             user.mentor = req.body.mentor ? req.body.mentor : user.mentor;
             user.mentee = req.body.mentee ? req.body.mentee : user.mentee;
+            user.pfp = req.file.path ? req.file.path : user.pfp;
 
             user.save()
                 .then(() => res.json('User updated!'))
@@ -169,7 +198,8 @@ router.route('/update').post(async(req, res) => {
 });
 
 //update by id, just for testing
-router.route('/update/:id').post(async(req, res) => {
+router.route('/update/:id').post(upload.single('pfp'), async(req, res) => {
+    console.log(req.file.path);
     FullUser.findById(req.params.id)
         .then(user => {
             user.username = req.body.username ? req.body.username : user.username;
@@ -185,6 +215,7 @@ router.route('/update/:id').post(async(req, res) => {
             user.linkedin = req.body.linkedin ? req.body.linkedin : user.linkedin;
             user.mentor = req.body.mentor ? req.body.mentor : user.mentor;
             user.mentee = req.body.mentee ? req.body.mentee : user.mentee;
+            user.pfp = req.file.path ? req.file.path : user.pfp;
 
             user.save()
                 .then(() => res.json('User updated!'))

@@ -18,6 +18,7 @@ const userSchema = new Schema({
     linkedin: { type: String, required: false },
     mentor: { type: String, required: false },
     mentee: { type: String, required: false },
+    pfp: { type: String, required: false },
 }, {
     timestamps: true,
 });
