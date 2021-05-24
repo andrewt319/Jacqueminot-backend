@@ -53,23 +53,24 @@ router.route('/add').post(async(req, res) => {
     const password = await bcrypt.hash(req.body.password, 10);
     const {
         name,
-        body,
+        org,
         major,
         year,
         occupation,
         date,
         clss,
         fam,
-        description,
+        additional,
         fb,
         linkedin,
-        mentor,
-        mentee
+        beMentor,
+        beMentee
     } = req.body;
 
     const newFullUser = new FullUser({
         username,
         password,
+        org,
         name,
         major,
         year,
@@ -77,11 +78,11 @@ router.route('/add').post(async(req, res) => {
         date,
         clss,
         fam,
-        description,
+        additional,
         fb,
         linkedin,
-        mentor,
-        mentee
+        beMentor,
+        beMentee
     });
 
     const token = jwt.sign({ id: newFullUser._id, username: newFullUser.username },
@@ -118,7 +119,7 @@ router.route('/findMentors/:id').get(async(req, res) => {
 
     const user = await FullUser.findById(req.params.id).lean();
 
-    FullUser.find({ major: user.major, mentor: "Open" })
+    FullUser.find({ major: user.major, beMentor: true })
         .then(matches => res.json(matches))
         .catch(err => res.status(400).json('Error: ' + err));
 });
@@ -177,17 +178,17 @@ router.route('/update').post(upload.single('pfp'), async(req, res) => {
         .then(user => {
             user.username = req.body.username ? req.body.username : user.username;
             user.name = req.body.name ? req.body.name : user.name;
-            user.bio = req.body.bio ? req.body.bio : user.bio;
+            user.org = req.body.org ? req.body.org : user.org;
             user.major = req.body.major ? req.body.major : user.major;
             user.year = req.body.year ? req.body.year : user.year;
             user.occupation = req.body.occupation ? req.body.occupation : user.occupation;
             user.clss = req.body.clss ? req.body.clss : user.clss;
             user.fam = req.body.fam ? req.body.fam : user.fam
-            user.description = req.body.description ? req.body.description : user.description;
+            user.additional = req.body.additional ? req.body.additional : user.additional;
             user.fb = req.body.fb ? req.body.fb : user.fb;
             user.linkedin = req.body.linkedin ? req.body.linkedin : user.linkedin;
-            user.mentor = req.body.mentor ? req.body.mentor : user.mentor;
-            user.mentee = req.body.mentee ? req.body.mentee : user.mentee;
+            user.beMentor = req.body.beMentor ? req.body.beMentor : user.beMentor;
+            user.beMentee = req.body.beMentee ? req.body.beMentee : user.beMentee;
             user.pfp = req.file.path ? req.file.path : user.pfp;
 
             user.save()
@@ -199,23 +200,23 @@ router.route('/update').post(upload.single('pfp'), async(req, res) => {
 
 //update by id, just for testing
 router.route('/update/:id').post(upload.single('pfp'), async(req, res) => {
-    console.log(req.file.path);
+
     FullUser.findById(req.params.id)
         .then(user => {
             user.username = req.body.username ? req.body.username : user.username;
             user.name = req.body.name ? req.body.name : user.name;
-            user.bio = req.body.bio ? req.body.bio : user.bio;
+            user.org = req.body.org ? req.body.org : user.org;
             user.major = req.body.major ? req.body.major : user.major;
             user.year = req.body.year ? req.body.year : user.year;
             user.occupation = req.body.occupation ? req.body.occupation : user.occupation;
             user.clss = req.body.clss ? req.body.clss : user.clss;
             user.fam = req.body.fam ? req.body.fam : user.fam
-            user.description = req.body.description ? req.body.description : user.description;
+            user.additional = req.body.additional ? req.body.additional : user.additional;
             user.fb = req.body.fb ? req.body.fb : user.fb;
             user.linkedin = req.body.linkedin ? req.body.linkedin : user.linkedin;
-            user.mentor = req.body.mentor ? req.body.mentor : user.mentor;
-            user.mentee = req.body.mentee ? req.body.mentee : user.mentee;
-            user.pfp = req.file.path ? req.file.path : user.pfp;
+            user.beMentor = req.body.beMentor ? req.body.beMentor : user.beMentor;
+            user.beMentee = req.body.beMentee ? req.body.beMentee : user.beMentee;
+            user.pfp = req.file ? req.file.path : user.pfp;
 
             user.save()
                 .then(() => res.json('User updated!'))

@@ -133,7 +133,6 @@ const search = async (e) => {
   }).then( res => res.json() );
 
   console.log(result);
-
 }
 
 const findMentors = async (e) => {
