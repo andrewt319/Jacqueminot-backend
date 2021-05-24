@@ -207,6 +207,7 @@ router.route('/update').post(upload.single('pfp'), async(req, res) => {
 //update by id, just for testing
 router.route('/update/:id').post(upload.single('pfp'), async(req, res) => {
 
+    if(req.body.password) {temp = await bcrypt.hash(req.body.password, 10) };
     FullUser.findById(req.params.id)
         .then(user => {
 
@@ -225,6 +226,8 @@ router.route('/update/:id').post(upload.single('pfp'), async(req, res) => {
             user.beMentor = req.body.beMentor != null ? req.body.beMentor : user.beMentor;
             user.beMentee = req.body.beMentee != null ? req.body.beMentee : user.beMentee;
             user.pfp = req.file ? req.file.path : user.pfp;
+            user.pfpName = req.file ? req.file.originalname : user.pfpName;
+            user.password = req.body.password ? temp : user.password;
 
             user.save()
                 .then(() => res.json('User updated!'))
