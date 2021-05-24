@@ -20,6 +20,7 @@ const userSchema = new Schema({
     beMentee: { type: Boolean, required: false, default: false },
     pfp: { type: String, required: false }, 
     pfpName: { type: String, required: false },
+    resetKey: { type: String, required: false }, 
     date: { type: Date, required: false },
 }, {
     timestamps: true, 

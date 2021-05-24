@@ -3,7 +3,8 @@ let FullUser = require('../models/fullUser.model');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
-const JWT_SECRET = 'lkjsdfku4@#$@#o7w59 pajfclvkas%$#ur3daFDUA'
+const JWT_SECRET = process.env.JWT_SECRET
+const nodemailer = require('nodemailer');
 
 const storage = multer.diskStorage({
     destination: function(req, file, cb) {
@@ -226,7 +227,7 @@ router.route('/update/:id').post(upload.single('pfp'), async(req, res) => {
             user.beMentor = req.body.beMentor != null ? req.body.beMentor : user.beMentor;
             user.beMentee = req.body.beMentee != null ? req.body.beMentee : user.beMentee;
             user.pfp = req.file ? req.file.path : user.pfp;
-            user.pfpName = req.file ? req.file.originalname : user.pfpName;
+            user.pfpName = req.file ? req.file.originalname : user.pfpName;  
             user.password = req.body.password ? temp : user.password;
 
             user.save()
@@ -243,6 +244,23 @@ router.route('/searchChat/:username').get((req, res) => {
         .catch(err => res.status(400).json('Error: ' + err));
 });
 
+//reset password
+router.route('/fp').post((req, res) => {
+    FullUser.findOne({ username: req.body.username })
+        .then(user => {
+            console.log(user);
+            let boo = user !== null ? true : false;
+            console.log(boo); 
+            res.json({data: user, success: boo});
 
+            //
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(400).json('Error: ' + err);
+        });
+
+    
+});
 
 module.exports = router;
