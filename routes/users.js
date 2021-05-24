@@ -44,6 +44,8 @@ router.route('/login').post(async(req, res) => {
     return res.json({ status: 'error', error: 'Invalid username/password2', user });
 })
 
+
+//change password
 router.route('/change-password').post(async(req, res) => {
     const token = req.body.token;
     let pass = req.body.newpassword;
