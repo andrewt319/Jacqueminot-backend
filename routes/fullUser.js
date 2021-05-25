@@ -55,37 +55,31 @@ router.route('/add').post(async(req, res) => {
     const {
         first,
         last,
-        org,
-        major,
-        year,
-        occupation,
-        date,
         clss,
         fam,
+        year,
+        major,
+        occupation,
+        organization,
         additional,
         fb,
-        linkedin,
-        beMentor,
-        beMentee
+        linkedin
     } = req.body;
 
     const newFullUser = new FullUser({
-        username,
-        password,
-        org,
-        first,
-        last,
-        major,
-        year,
-        occupation,
-        date,
-        clss,
-        fam,
-        additional,
-        fb,
-        linkedin,
-        beMentor,
-        beMentee
+        username: username,
+        password: password,
+        org: organization,
+        first: first,
+        last: last,
+        major: major,
+        year: year,
+        occupation: occupation,
+        clss: clss,
+        fam: fam,
+        additional: additional,
+        fb: fb,
+        linkedin: linkedin
     });
 
     const token = jwt.sign({ id: newFullUser._id, username: newFullUser.username },
