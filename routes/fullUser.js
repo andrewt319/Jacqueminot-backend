@@ -83,7 +83,8 @@ router.route('/add').post(async(req, res) => {
     });
 
     const token = jwt.sign({ id: newFullUser._id, username: newFullUser.username },
-        JWT_SECRET
+        JWT_SECRET,
+        { expiresIn: '24h' }
     );
 
     newFullUser.save()
@@ -102,7 +103,8 @@ router.route('/login').post(async(req, res) => {
 
     if (await bcrypt.compare(password, user.password)) {
         const token = jwt.sign({ id: user._id, username: user.username },
-            JWT_SECRET
+            JWT_SECRET,
+            { expiresIn: '24h' }
         );
 
         return res.json({ status: 'ok', data: token });
@@ -193,7 +195,7 @@ router.route('/update').post(upload.single('pfp'), async(req, res) => {
             user.password = req.body.password ? temp : user.password;
 
             user.save()
-                .then(() => res.json({message: 'User updated!', success: true}))
+                .then(() => res.status(200).json({message: 'User updated!', success: true}))
                 .catch(err => res.status(400).json('Error: ' + err));
         })
         .catch(err => res.status(400).json('Error: ' + err));
@@ -242,18 +244,118 @@ router.route('/searchChat/:username').get((req, res) => {
 router.route('/fp').post((req, res) => {
     FullUser.findOne({ username: req.body.username })
         .then(user => {
-            console.log(user);
             let boo = user !== null ? true : false;
-            console.log(boo); 
-            res.json({data: user, success: boo});
+            //create unique key
+            let secret = user.password + '-' + user.createdAt;
+            let token = jwt.sign({ id: user._id, username: user.username}, 
+                secret,
+                { expiresIn: '1h'}
+            );
 
-            //
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                  user: `${process.env.EMAIL_ADDRESS}`,
+                  pass: `${process.env.EMAIL_PASSWORD}`,
+                },
+              });
+
+            // verify connection configuration
+            // transporter.verify(function(error, success) {
+            //     if (error) {
+            //     console.log(error);
+            //     } else {
+            //     console.log("Server is ready to take our messages");
+            //     }
+            // });
+
+            const mailOptions = {
+                from: process.env.EMAIL_ADDRESS,
+                to: `${user.username}`,
+                subject: 'Link To Reset Password',
+                text:
+                  'You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n'
+                  + 'Please click on the following link, or paste this into your browser to complete the process within one hour of receiving it:\n\n'
+                  + `${process.env.CLIENT_URL}/reset/${token}\n\n`
+                  + 'If you did not request this, please ignore this email and your password will remain unchanged.\n\n'
+                  + 'This link will expire in 1 hours'
+            };
+
+            transporter.sendMail(mailOptions, (err, response) => {
+                if (err) {
+                  console.error('there was an error: ', err);
+                } else {
+                  res.status(200).json({data: user, success: boo});
+                }
+              });
         })
         .catch(err => {
-            console.log(err);
             res.status(400).json('Error: ' + err);
         });
 
+    
+});
+
+//reset password
+router.route('/resetValid/:token').get((req, res) => {
+    const token = req.params.token;
+    const tempUser = jwt.decode(token);
+    // console.log(tempUser)
+    FullUser.findById(tempUser.id)
+        .then(user => {
+            if(!user){
+                res.json({success:false});
+            }
+            //create unique key
+            const secret = user.password + '-' + user.createdAt;
+            const verifiedUser = jwt.verify(token,secret); 
+            
+            if(verifiedUser){
+                res.status(200).json({first:user.first,pass:user.password, success:true});
+            }else{
+                res.status(400).json({success:false}); 
+            }
+        })
+        .catch(err => {
+            res.status(400).json('Error: ' + err); 
+        })
+    
+});
+
+//reset password
+router.route('/resetPassword').post(async (req, res) => {
+    const tempUser = jwt.decode(req.body.token);
+
+    console.log(req.body.new1.length);
+
+    //length
+    if(req.body.new1.length < 6 || req.body.new2.length < 6){
+        return res.status(400).json({success:false, message:"Password must be at least 6 characters"}) 
+    }
+
+    //confirm not allowed
+    if(req.body.new1 != req.body.new2){
+        return res.status(400).json({success:false, message:"Passwords Do Not Match"}) 
+    }
+    console.log(req.body.new1, " | ", req.body.original);
+    //same password as before
+    if(await bcrypt.compare(req.body.new1, req.body.original)){
+        return res.status(400).json({success:false, message:"Cannot use the same password"})
+    }
+    console.log("temp");
+    FullUser.findById(tempUser.id)
+        .then(async user => {
+
+            console.log(2);
+
+            user.password = await bcrypt.hash(req.body.new1, 10);
+            user.save()
+                .then(() => res.status(200).json({success:true, message:"Updated"}))
+                .catch(err => res.status(400).json('Error: ' + err));
+        })
+        .catch(err => {
+            res.status(400).json('Error: ' + err);  
+        }) 
     
 });
 
