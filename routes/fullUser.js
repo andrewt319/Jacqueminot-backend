@@ -98,7 +98,7 @@ router.route('/login').post(async(req, res) => {
     const user = await FullUser.findOne({ username }).lean();
 
     if (!user) {
-        return res.json({ status: 'error', error: 'Invalid username/password1' });
+        return res.status(400).json({ success: false, message: 'User not found' });
     }
 
     if (await bcrypt.compare(password, user.password)) {
@@ -107,10 +107,10 @@ router.route('/login').post(async(req, res) => {
             { expiresIn: '24h' }
         );
 
-        return res.json({ status: 'ok', data: token });
+        return res.status(200).json({ success: true, data: token });
+    }else{
+        return res.status(400).json({ sucess: false, message: 'Incorrect Password', user });
     }
-
-    return res.json({ status: 'error', error: 'Invalid username/password2', user });
 })
 
 //find mentors
@@ -138,6 +138,13 @@ router.route('/:id').get((req, res) => {
     FullUser.findById(req.params.id)
         .then(user => res.json(user))
         .catch(err => res.status(400).json('Error: ' + err));
+});
+
+//get specific user by username
+router.route('/email/:username').get((req, res) => {
+    FullUser.findOne({username : req.params.username})
+        .then(user => res.json({user: user}))
+        .catch(err =>{ res.status(400).json('Error: ' + err); });
 });
 
 
@@ -245,6 +252,12 @@ router.route('/fp').post((req, res) => {
     FullUser.findOne({ username: req.body.username })
         .then(user => {
             let boo = user !== null ? true : false;
+
+            //no user
+            if(!boo){
+                return res.status(400).json({success:false, message: 'User not found'})
+            }
+
             //create unique key
             let secret = user.password + '-' + user.createdAt;
             let token = jwt.sign({ id: user._id, username: user.username}, 
@@ -285,7 +298,7 @@ router.route('/fp').post((req, res) => {
                 if (err) {
                   console.error('there was an error: ', err);
                 } else {
-                  res.status(200).json({data: user, success: boo});
+                  res.status(200).json({data: user, success: true, message: 'Email Sent!'});
                 }
               });
         })
