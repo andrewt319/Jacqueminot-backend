@@ -9,6 +9,7 @@ const userSchema = new Schema({
     last: { type: String, required: true },
     org: { type: String, required: true },
     major: { type: String, required: true },
+    other: { type: String, required: false },
     year: { type: Number, required: true },
     occupation: { type: String, required: true },
     clss: { type: String, required: true },

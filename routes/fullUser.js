@@ -1,5 +1,7 @@
 const router = require('express').Router();
 let FullUser = require('../models/fullUser.model');
+let PhotoFiles = require('../models/img.model');
+let Chunks = require('../models/chunk.model');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
@@ -8,31 +10,56 @@ const nodemailer = require('nodemailer');
 const uploads = require("../middleware/upload");
 
 
-router.route('/newUpload').post(async (req, res) => {
-    try {
-      await uploads(req, res);
-  
-      console.log(req.file);
-      if (req.file == undefined) {
-        return res.send(`You must select a file.`);
-      }
-  
-      return res.send(`File has been uploaded.`);
-    } catch (error) {
-      console.log(error);
-      return res.send(`Error when trying upload image: ${error}`);
-    }
-  });
+const mongoose = require('mongoose');
+const Grid = require('gridfs-stream');
+let connection = mongoose.connection;
+let gfs; 
 
-  //get file from database
-  router.route('/getUpload/:filename').get((req, res) => { 
-    gfs = Grid(db);
-    var readstream = gfs.createReadStream({filename: req.params.filename}); 
-    readstream.on("error", function(err){
-        res.send("No image found with that title"); 
-    });
-    readstream.pipe(res);
+connection.once('open', () => {
+    gfs = Grid(connection.db, mongoose.mongo);
+    gfs.collection('photos');
 });
+
+
+    router.route('/newUpload').post(async (req, res) => {
+        try {
+            await uploads(req, res);
+        
+            console.log(req.file);
+            if (req.file == undefined) {
+                return res.send(`You must select a file.`);
+            }
+    
+            return res.send(`File has been uploaded.`);
+        } catch (error) {
+            console.log(error);
+            return res.send(`Error when trying upload image: ${error}`);
+        }
+    });
+
+    //get image from database
+    router.route('/getUpload/:filename').get(async (req, res) => {
+        gfs.files.findOne({ filename: req.params.filename }, (err, file) => {
+            // Check if file
+            if (!file || file.length === 0) {
+              return res.status(404).json({
+                fail: true,
+                err: 'No file exists'
+              });
+            }
+        
+            // Check if image
+            if (file.contentType === 'image/jpeg' || file.contentType === 'image/png') {
+                const readstream = gfs.createReadStream(file.filename);
+                readstream.pipe(res);
+            } else {
+              res.status(404).json({
+                fail: true,
+                err: 'Not an image'
+              });
+            }
+          });
+    });
 
 const storage = multer.diskStorage({
     destination: function(req, file, cb) {
@@ -204,11 +231,18 @@ router.route('/:id').delete((req, res) => {
 
 
 //update current user
-router.route('/update').post(upload.single('pfp'), async(req, res) => {
-    const token = req.body.token;
-    const tempUser = jwt.verify(token, JWT_SECRET);
-    let temp = "";
+router.route('/update').post(async(req, res) => {
+
+    try {
+        await uploads(req, res);
+    } catch (error) {
+        return res.status(400).json({success: false, error: `Error when trying upload image: ${error}`});
+    } 
+    
     if(req.body.password) {temp = await bcrypt.hash(req.body.password, 10) };
+    let token = req.body.token;
+    const tempUser = jwt.verify(token, JWT_SECRET);
+  
     FullUser.findById(tempUser.id)
         .then(user => {
             user.username = req.body.username ? req.body.username : user.username;
@@ -216,6 +250,7 @@ router.route('/update').post(upload.single('pfp'), async(req, res) => {
             user.last = req.body.last ? req.body.last : user.last;
             user.org = req.body.org ? req.body.org : user.org;
             user.major = req.body.major ? req.body.major : user.major;
+            user.other = req.body.other ? req.body.other : user.other;
             user.year = req.body.year ? req.body.year : user.year;
             user.occupation = req.body.occupation ? req.body.occupation : user.occupation;
             user.clss = req.body.clss ? req.body.clss : user.clss;
@@ -225,8 +260,8 @@ router.route('/update').post(upload.single('pfp'), async(req, res) => {
             user.linkedin = req.body.linkedin ? req.body.linkedin : user.linkedin;
             user.beMentor = req.body.beMentor != null ? req.body.beMentor : user.beMentor;
             user.beMentee = req.body.beMentee != null ? req.body.beMentee : user.beMentee;
-            user.pfp = req.file ? req.file.path : user.pfp;
-            user.pfpName = req.file ? req.file.originalname : user.pfpName;
+            user.pfp = req.file ? req.file.filename : user.pfp;
+            user.pfpName = req.file ? req.file.originalname : user.pfpName;  
             user.password = req.body.password ? temp : user.password;
 
             user.save()
@@ -237,9 +272,16 @@ router.route('/update').post(upload.single('pfp'), async(req, res) => {
 });
 
 //update by id, just for testing
-router.route('/update/:id').post(upload.single('pfp'), async(req, res) => {
+router.route('/update/:id').post(async(req, res) => {
 
+    try {
+        await uploads(req, res);
+    } catch (error) {
+        return res.status(400).json({success: false, error: `Error when trying upload image: ${error}`});
+    } 
+    
     if(req.body.password) {temp = await bcrypt.hash(req.body.password, 10) };
+
     FullUser.findById(req.params.id)
         .then(user => {
 
@@ -257,7 +299,7 @@ router.route('/update/:id').post(upload.single('pfp'), async(req, res) => {
             user.linkedin = req.body.linkedin ? req.body.linkedin : user.linkedin;
             user.beMentor = req.body.beMentor != null ? req.body.beMentor : user.beMentor;
             user.beMentee = req.body.beMentee != null ? req.body.beMentee : user.beMentee;
-            user.pfp = req.file ? req.file.path : user.pfp;
+            user.pfp = req.file ? req.file.filename : user.pfp;
             user.pfpName = req.file ? req.file.originalname : user.pfpName;  
             user.password = req.body.password ? temp : user.password;
 
