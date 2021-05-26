@@ -5,6 +5,34 @@ const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const JWT_SECRET = process.env.JWT_SECRET
 const nodemailer = require('nodemailer');
+const uploads = require("../middleware/upload");
+
+
+router.route('/newUpload').post(async (req, res) => {
+    try {
+      await uploads(req, res);
+  
+      console.log(req.file);
+      if (req.file == undefined) {
+        return res.send(`You must select a file.`);
+      }
+  
+      return res.send(`File has been uploaded.`);
+    } catch (error) {
+      console.log(error);
+      return res.send(`Error when trying upload image: ${error}`);
+    }
+  });
+
+  //get file from database
+  router.route('/getUpload/:filename').get((req, res) => { 
+    gfs = Grid(db);
+    var readstream = gfs.createReadStream({filename: req.params.filename}); 
+    readstream.on("error", function(err){
+        res.send("No image found with that title"); 
+    });
+    readstream.pipe(res);
+});
 
 const storage = multer.diskStorage({
     destination: function(req, file, cb) {
