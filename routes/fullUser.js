@@ -169,21 +169,21 @@ router.route('/login').post(async(req, res) => {
 })
 
 //find mentors
-router.route('/findMentors/:id').get(async(req, res) => {
+router.route('/findMentors/:major').get(async(req, res) => {
 
-    const user = await FullUser.findById(req.params.id).lean();
+    // const user = await FullUser.findById(req.params.id).lean();
 
-    FullUser.find({ major: user.major, beMentor: true })
+    FullUser.find({ major: req.params.major, beMentor: true })
         .then(matches => res.json(matches))
         .catch(err => res.status(400).json('Error: ' + err));
 });
 
 //find mentors
-router.route('/findMentees/:id').get(async(req, res) => {
+router.route('/findMentees/:major').get(async(req, res) => {
 
-    const user = await FullUser.findById(req.params.id).lean();
+    // const user = await FullUser.findById(req.params.id).lean();
 
-    FullUser.find({ major: user.major, beMentee: true })
+    FullUser.find({ major: req.params.major, beMentee: true })
         .then(matches => res.json(matches))
         .catch(err => res.status(400).json('Error: ' + err));
 });
