@@ -1,6 +1,6 @@
 # Jacqueminot
 
-## This is the backend server API for the Psi Pledge Class Build Project Application, Jacqueminot.
+## This is the backend server API for Jacqueminot.
 
 #### In order to launch the API, use the following procedure:
 - Clone the git repository onto your computer using git clone
